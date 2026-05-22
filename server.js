@@ -18,7 +18,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── LOGGING ──────────────────────────────────────────────────────────────────
 
-const logsDir  = path.join(__dirname, 'logs');
+const logsDir = path.join(__dirname, 'logs');
 if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });
 const logStream = fs.createWriteStream(path.join(logsDir, 'webhook.log'), { flags: 'a' });
 
@@ -32,7 +32,7 @@ function logWebhook(payload, note = '') {
 const sseClients = new Set();
 
 function broadcastSSE(event, data) {
-  const chunk = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  const chunk = 'event: ' + event + '\ndata: ' + JSON.stringify(data) + '\n\n';
   for (const res of sseClients) {
     try { res.write(chunk); } catch (_) { sseClients.delete(res); }
   }
@@ -48,30 +48,49 @@ function resolveName(profileId) {
 }
 
 function parsePayload(raw) {
-  const event_type = raw.event || raw.type || raw.event_type || 'unknown';
+  // Map Closely's trigger string to our event type
+  const triggerStr = (raw.trigger || raw.event || raw.type || raw.event_type || '').toLowerCase();
+  let event_type = 'unknown';
+  if (triggerStr.includes('accept') || triggerStr.includes('connection')) event_type = 'connection_accepted';
+  else if (triggerStr.includes('repl') || triggerStr.includes('message'))  event_type = 'reply_received';
+  else if (triggerStr.includes('tag') && triggerStr.includes('remov'))     event_type = 'tag_removed';
+  else if (triggerStr.includes('tag'))                                      event_type = 'tag_added';
+  else if (triggerStr.includes('note'))                                     event_type = 'note_added';
+  else if (raw.event_type)                                                  event_type = raw.event_type;
 
-  const linkedin_profile_id = raw.account?.email
-    || raw.account?.id
-    || raw.profile_id
-    || raw.sender_account
-    || null;
+  // Profile identity — Closely sends this inside accountDto
+  const acct = raw.accountDto || raw.account || {};
+  const linkedin_profile_id   = acct.email || raw.profile_id || raw.sender_account || null;
+  const linkedin_profile_name = resolveName(linkedin_profile_id)
+    || (acct.firstName ? (acct.firstName + ' ' + (acct.lastName || '')).trim() : null);
 
-  const linkedin_profile_name = resolveName(linkedin_profile_id);
+  // Contact info — Closely sends flat on the root object
+  const contact_name = (raw.firstName && raw.lastName)
+    ? (raw.firstName + ' ' + raw.lastName).trim()
+    : (raw.contact_name || null);
+  const contact_linkedin_url = raw.linkedinUrl || raw.linkedin_url
+    || (raw.contact && raw.contact.linkedin_url) || null;
+  const contact_email = raw.workEmail || raw.directEmail
+    || raw.email || (raw.contact && raw.contact.email) || null;
+  const contact_phone = raw.phone || (raw.contact && raw.contact.phone) || null;
 
-  const contact = raw.contact || raw.lead || raw.prospect || {};
-  const contact_name         = contact.full_name || contact.name || raw.contact_name || null;
-  const contact_linkedin_url = contact.linkedin_url || contact.profile_url || raw.linkedin_url || null;
-  const contact_email        = contact.email || raw.contact_email || null;
-  const contact_phone        = contact.phone || raw.contact_phone || null;
+  // Campaign — Closely sends an array campaignsName inside accountDto
+  const campaignsArr = acct.campaignsName || acct.campaigns || [];
+  const campaign_name = (Array.isArray(campaignsArr) && campaignsArr.length)
+    ? campaignsArr[0]
+    : (raw.campaign && raw.campaign.name) || raw.campaign_name || null;
 
-  const campaign_name = raw.campaign?.name || raw.campaign_name || raw.sequence_name || null;
+  // Message
+  const message_content = (raw.message && (raw.message.text || raw.message.body))
+    || raw.reply_text || raw.message_content || raw.text || null;
+  const message_direction = (raw.message && raw.message.direction)
+    || (event_type === 'reply_received' ? 'inbound' : null);
 
-  const message_content   = raw.message?.text || raw.message?.body || raw.reply_text || raw.message_content || null;
-  const message_direction = raw.message?.direction || (event_type === 'reply_received' ? 'inbound' : null);
+  // Tag / Note
+  const tag_name     = (raw.tag && raw.tag.name) || raw.tag_name || raw.tagName || null;
+  const note_content = (raw.note && raw.note.text) || raw.note_content || raw.noteContent || null;
 
-  const tag_name     = raw.tag?.name || raw.tag_name  || null;
-  const note_content = raw.note?.text || raw.note_content || null;
-
+  // Timestamps
   const event_timestamp = raw.timestamp || raw.event_at || raw.created_at || new Date().toISOString();
   const received_at     = Date.now();
   const d               = new Date(event_timestamp);
@@ -110,15 +129,13 @@ app.post('/webhook/closely', (req, res) => {
       logWebhook(body, 'EMPTY_OR_MALFORMED');
       return;
     }
-
     logWebhook(body);
-    const row = parsePayload(body);
-    const id  = db.saveEvent(row);
+    const row   = parsePayload(body);
+    const id    = db.saveEvent(row);
     const saved = db.getEventById(id);
     broadcastSSE('new_event', saved);
-
   } catch (err) {
-    logWebhook(req.body, `ERROR: ${err.message}`);
+    logWebhook(req.body, 'ERROR: ' + err.message);
   }
 });
 
@@ -127,7 +144,7 @@ app.post('/webhook/closely', (req, res) => {
 app.post('/api/test-webhook', (req, res) => {
   const samples = require('./test-payload.json');
   const types   = Object.keys(samples);
-  const type    = req.body?.type || types[Math.floor(Math.random() * types.length)];
+  const type    = (req.body && req.body.type) || types[Math.floor(Math.random() * types.length)];
   const payload = samples[type] || samples[types[0]];
 
   const row   = parsePayload(payload);
@@ -155,7 +172,6 @@ app.get('/api/live-feed', (req, res) => {
   }, 20000);
 
   res.write('event: connected\ndata: ' + JSON.stringify({ ts: Date.now() }) + '\n\n');
-
   sseClients.add(res);
 
   req.on('close', () => {
@@ -208,8 +224,8 @@ app.listen(PORT, '0.0.0.0', () => {
   const base = process.env.RAILWAY_PUBLIC_DOMAIN
     ? 'https://' + process.env.RAILWAY_PUBLIC_DOMAIN
     : 'http://localhost:' + PORT;
-  console.log('\n LinkedIn Outreach Dashboard running!');
-  console.log('   Dashboard : ' + base);
-  console.log('   Webhook   : ' + base + '/webhook/closely');
-  console.log('   Test      : ' + base + '/api/test-webhook\n');
+  console.log('\nLinkedIn Outreach Dashboard running!');
+  console.log('Dashboard : ' + base);
+  console.log('Webhook   : ' + base + '/webhook/closely');
+  console.log('Test      : ' + base + '/api/test-webhook\n');
 });
