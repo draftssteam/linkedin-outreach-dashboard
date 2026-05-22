@@ -1,8 +1,6 @@
 {
   "profiles": {
-    "john@company.com": "John Smith — Sales",
-    "sarah@company.com": "Sarah Khan — Partnerships",
-    "mike@company.com": "Mike Rao — Founder"
+    "connect.draftss@gmail.com": "Daniel Reed — Growth & Strategy"
   },
   "server_port": 3000
 }
