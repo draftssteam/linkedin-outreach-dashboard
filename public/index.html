@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LinkedIn Outreach Dashboard</title>
+  <link rel="stylesheet" href="/style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     HEADER BAR
+══════════════════════════════════════════════════════════════════ -->
+<header id="header">
+  <div class="header-left">
+    <div class="header-title">🔗 LinkedIn <span>Outreach</span> Dashboard</div>
+    <div id="status-pill" class="status-pill">
+      <span class="status-dot"></span> OFFLINE
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="last-update" id="last-update">Connecting...</span>
+    <span class="live-clock" id="live-clock"></span>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     MAIN CONTENT
+══════════════════════════════════════════════════════════════════ -->
+<main class="main">
+
+  <!-- ── KPI CARDS ─────────────────────────────────────────────── -->
+  <section>
+    <div class="kpi-grid">
+
+      <div class="kpi-card">
+        <div class="kpi-icon">📤</div>
+        <div class="kpi-label">Invites Sent</div>
+        <div class="kpi-value" id="kpi-invites">0</div>
+        <div class="kpi-tooltip">Total connection requests sent across all profiles</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon">🤝</div>
+        <div class="kpi-label">Connections Accepted</div>
+        <div class="kpi-value" id="kpi-accepted">0</div>
+        <div class="kpi-tooltip">People who accepted your connection request</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon">💬</div>
+        <div class="kpi-label">Replies Received</div>
+        <div class="kpi-value" id="kpi-replies">0</div>
+        <div class="kpi-tooltip">People who replied to your messages</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon">📈</div>
+        <div class="kpi-label">Acceptance Rate</div>
+        <div class="kpi-value" id="kpi-accept-rate">0%</div>
+        <div class="kpi-tooltip">Out of everyone invited, how many accepted?</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon">🎯</div>
+        <div class="kpi-label">Reply Rate</div>
+        <div class="kpi-value" id="kpi-reply-rate">0%</div>
+        <div class="kpi-tooltip">Out of connections made, how many replied?</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── PER-PROFILE CARDS ──────────────────────────────────────── -->
+  <section>
+    <div class="section-title">
+      👤 LinkedIn Profiles
+      <span class="badge-count" id="profile-count">0 profiles</span>
+    </div>
+    <div class="profile-grid" id="profile-grid">
+      <div class="empty-profiles">🔗 No LinkedIn profiles yet — waiting for first webhook...</div>
+    </div>
+  </section>
+
+  <!-- ── LIVE FEED + DATA TABLE ─────────────────────────────────── -->
+  <section id="feed-section">
+    <div class="feed-table-row">
+
+      <!-- Live Activity Feed -->
+      <div class="feed-panel">
+        <div class="feed-panel-header">
+          <h2>⚡ Live Activity Feed</h2>
+          <span style="font-size:11px;color:var(--text-muted)">Last 100 events</span>
+        </div>
+        <div class="feed-filters">
+          <button class="feed-filter-btn active" onclick="setFeedFilter('all',this)">All</button>
+          <button class="feed-filter-btn" onclick="setFeedFilter('accepted',this)">🤝 Accepted</button>
+          <button class="feed-filter-btn" onclick="setFeedFilter('replied',this)">💬 Replied</button>
+          <button class="feed-filter-btn" onclick="setFeedFilter('tags',this)">🏷️ Tags</button>
+          <button class="feed-filter-btn" onclick="setFeedFilter('notes',this)">🗒️ Notes</button>
+        </div>
+        <div class="feed-list" id="feed-list">
+          <div class="feed-empty">
+            <div class="feed-empty-icon">📭</div>
+            Waiting for webhooks...
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Table -->
+      <div class="table-panel">
+        <div class="table-controls">
+          <h2>📊 All Events</h2>
+          <input type="text" class="table-search" id="tbl-search" placeholder="🔍 Search contacts, campaigns, messages..." />
+          <select class="table-select" id="tbl-profile-filter">
+            <option value="">All Profiles</option>
+          </select>
+          <select class="table-select" id="tbl-type-filter">
+            <option value="">All Event Types</option>
+            <option value="connection_accepted">🤝 Connection Accepted</option>
+            <option value="reply_received">💬 Reply Received</option>
+            <option value="tag_added">🏷️ Tag Added</option>
+            <option value="tag_removed">🏷️ Tag Removed</option>
+            <option value="note_added">🗒️ Note Added</option>
+          </select>
+          <select class="table-select" id="tbl-campaign-filter">
+            <option value="">All Campaigns</option>
+          </select>
+          <div class="date-range">
+            <input type="date" class="date-input" id="tbl-date-from" title="From date" />
+            <span style="color:var(--text-muted);font-size:12px">to</span>
+            <input type="date" class="date-input" id="tbl-date-to" title="To date" />
+          </div>
+          <button class="btn-export" id="btn-export">⬇ Export CSV</button>
+          <span class="table-row-count" id="table-row-count">0 events</span>
+        </div>
+
+        <div class="table-wrap">
+          <table id="events-table">
+            <thead>
+              <tr>
+                <th data-col="event_timestamp">Date &amp; Time <span class="sort-icon"></span></th>
+                <th data-col="linkedin_profile_name">Profile <span class="sort-icon"></span></th>
+                <th data-col="campaign_name">Campaign <span class="sort-icon"></span></th>
+                <th data-col="contact_name">Contact <span class="sort-icon"></span></th>
+                <th data-col="event_type">Event <span class="sort-icon"></span></th>
+                <th data-col="contact_email">Email <span class="sort-icon"></span></th>
+                <th data-col="contact_phone">Phone <span class="sort-icon"></span></th>
+                <th data-col="message_content">Message / Note / Tag <span class="sort-icon"></span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">Loading events...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-pagination">
+          <button class="page-btn" id="page-prev" disabled>← Prev</button>
+          <span class="page-info" id="page-info">Page 1 of 1</span>
+          <button class="page-btn" id="page-next" disabled>Next →</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── CHARTS ────────────────────────────────────────────────── -->
+  <section>
+    <div class="section-title">📈 Analytics</div>
+    <div class="charts-grid">
+
+      <div class="chart-card">
+        <h3>👤 Profile Performance — Accepted vs Replied</h3>
+        <div class="chart-wrap"><canvas id="chart-profiles"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <h3>📅 Daily Activity — Last 30 Days</h3>
+        <div class="chart-wrap"><canvas id="chart-timeline"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <h3>🍩 Event Type Breakdown</h3>
+        <div class="chart-wrap"><canvas id="chart-breakdown"></canvas></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── CAMPAIGN COMPARISON TABLE ────────────────────────────── -->
+  <section>
+    <div class="campaign-table-panel">
+      <h2>📣 Campaign Comparison</h2>
+      <div class="campaign-table-wrap">
+        <table id="campaign-table">
+          <thead>
+            <tr>
+              <th>Campaign Name</th>
+              <th>Profile(s)</th>
+              <th>Start Date</th>
+              <th>Accepted</th>
+              <th>Replied</th>
+              <th>Accept Rate</th>
+              <th>Reply Rate</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted)">Loading campaigns...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ────────────────────────────────────────────────── -->
+  <footer style="text-align:center;padding:24px 0 8px;color:var(--text-muted);font-size:12px;">
+    LinkedIn Outreach Dashboard — powered by CloselyHQ webhooks &nbsp;|&nbsp;
+    <a href="/api/stats" target="_blank">API Stats</a> &nbsp;|&nbsp;
+    <button style="background:none;border:none;color:var(--blue-bright);cursor:pointer;font-size:12px" onclick="fetch('/api/test-webhook',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(()=>alert('Test event fired! Check the dashboard.'))">🧪 Fire Test Event</button>
+  </footer>
+
+</main>
+
+<!-- ── TOAST CONTAINER ────────────────────────────────────────────── -->
+<div id="toast-container"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

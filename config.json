@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "john@company.com": "John Smith — Sales",
+    "sarah@company.com": "Sarah Khan — Partnerships",
+    "mike@company.com": "Mike Rao — Founder"
+  },
+  "server_port": 3000
+}

@@ -1,0 +1,104 @@
+{
+  "connection_accepted": {
+    "event": "connection_accepted",
+    "timestamp": "2025-05-22T10:15:32.000Z",
+    "account": {
+      "email": "john@company.com",
+      "id": "acc_john_001"
+    },
+    "contact": {
+      "full_name": "Priya Mehta",
+      "linkedin_url": "https://www.linkedin.com/in/priya-mehta-b2b/",
+      "email": "priya.mehta@startup.io",
+      "phone": "+1-555-0142"
+    },
+    "campaign": {
+      "name": "SaaS Founders Outreach Q2"
+    }
+  },
+
+  "reply_received": {
+    "event": "reply_received",
+    "timestamp": "2025-05-22T11:48:07.000Z",
+    "account": {
+      "email": "sarah@company.com",
+      "id": "acc_sarah_002"
+    },
+    "contact": {
+      "full_name": "Marcus Torres",
+      "linkedin_url": "https://www.linkedin.com/in/marcus-torres-vp/",
+      "email": "m.torres@enterprise.com",
+      "phone": null
+    },
+    "campaign": {
+      "name": "VP Sales Cold Outreach"
+    },
+    "message": {
+      "text": "Hi Sarah, thanks for reaching out! I'd love to learn more about your partnership program. Can we schedule a 20-minute call next week?",
+      "direction": "inbound"
+    }
+  },
+
+  "tag_added": {
+    "event": "tag_added",
+    "timestamp": "2025-05-22T13:22:45.000Z",
+    "account": {
+      "email": "mike@company.com",
+      "id": "acc_mike_003"
+    },
+    "contact": {
+      "full_name": "Ananya Sharma",
+      "linkedin_url": "https://www.linkedin.com/in/ananya-sharma-cto/",
+      "email": "ananya@techscale.in",
+      "phone": "+91-98765-43210"
+    },
+    "campaign": {
+      "name": "CTO Expansion Campaign"
+    },
+    "tag": {
+      "name": "Hot Lead"
+    }
+  },
+
+  "tag_removed": {
+    "event": "tag_removed",
+    "timestamp": "2025-05-22T14:05:11.000Z",
+    "account": {
+      "email": "john@company.com",
+      "id": "acc_john_001"
+    },
+    "contact": {
+      "full_name": "Carlos Mendes",
+      "linkedin_url": "https://www.linkedin.com/in/carlos-mendes-growth/",
+      "email": null,
+      "phone": null
+    },
+    "campaign": {
+      "name": "SaaS Founders Outreach Q2"
+    },
+    "tag": {
+      "name": "Not Interested"
+    }
+  },
+
+  "note_added": {
+    "event": "note_added",
+    "timestamp": "2025-05-22T15:33:59.000Z",
+    "account": {
+      "email": "sarah@company.com",
+      "id": "acc_sarah_002"
+    },
+    "contact": {
+      "full_name": "Zoe Bennett",
+      "linkedin_url": "https://www.linkedin.com/in/zoe-bennett-partnerships/",
+      "email": "zoe.b@growthco.com",
+      "phone": "+44-7700-900123"
+    },
+    "campaign": {
+      "name": "VP Sales Cold Outreach"
+    },
+    "note": {
+      "text": "Had a 15-min discovery call. Very interested in the platform. Follow up in 2 weeks after their board meeting. Budget confirmed: ~$50k/year."
+    }
+  }
+}
